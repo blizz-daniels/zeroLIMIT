@@ -1,0 +1,14 @@
+@import url('style.zero-limit-base.css');
+
+/* Replace the remaining boutique copy at the presentation layer with Zero Limit language. */
+.shop-intro>.eyebrow,.shop-intro h1,.shop-intro>p:last-child,.editorial-copy h2,.editorial-copy>p:not(.eyebrow),.cta h2,.info-page>.eyebrow,.info-page>h1,.info-columns>p{font-size:0}
+.shop-intro>.eyebrow:after{content:'ZERO LIMIT / CURRENT DROP';font:500 10px 'DM Mono',monospace;letter-spacing:.16em;color:var(--rose)}
+.shop-intro h1:after{content:'THE NEXT A MOVE.';white-space:pre;display:block;font:400 clamp(55px,6vw,92px)/.82 var(--serif);letter-spacing:.04em;color:#f7f6f0}
+.shop-intro>p:last-child:after{content:'THE DAILY UNIFORM: STYLE, BEAUTY, AND THE ESSENTIALS THAT KEEP UP.';display:block;max-width:490px;font:500 11px/1.7 'DM Mono',monospace;letter-spacing:.04em;color:#cbcbc4}
+.editorial-copy h2:after{content:'MOVE AT YOUR A OWN PACE.';white-space:pre;display:block;font:400 clamp(47px,5vw,73px)/.84 var(--serif);letter-spacing:.035em;color:#f7f6f0}
+.editorial-copy>p:not(.eyebrow):after{content:'YOUR ROUTINE. YOUR RULES. THE RIGHT DETAILS CHANGE THE WHOLE DAY.';display:block;font:500 11px/1.7 'DM Mono',monospace;letter-spacing:.03em;color:#eadde0}
+.cta h2:after{content:'YOUR STYLE. A NO LIMIT.';white-space:pre;display:block;font:400 clamp(56px,6vw,92px)/.84 var(--serif);letter-spacing:.04em;color:#f4c518}
+.info-page>.eyebrow:after{content:'ZERO LIMIT / OUR CODE';font:500 10px 'DM Mono',monospace;letter-spacing:.16em;color:var(--rose)}
+.info-page>h1:after{content:'BUILT FOR THE A NEXT MOVE.';white-space:pre;display:block;font:400 clamp(55px,6vw,92px)/.84 var(--serif);letter-spacing:.04em;color:#f7f6f0}
+.info-columns>p:after{content:'ZERO LIMIT IS A DAILY UNIFORM FOR PEOPLE WHO REFUSE TO STAND STILL. BEAUTY, STYLE, AND THE DETAILS THAT KEEP YOUR MOMENT MOVING.';display:block;font:500 14px/1.75 'DM Mono',monospace;letter-spacing:.025em;color:#f7f6f0}
+@media(max-width:650px){.shop-intro h1:after{font-size:65px}.info-page>h1:after{font-size:62px}.cta h2:after{font-size:63px}}
