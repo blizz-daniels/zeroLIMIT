@@ -1,11 +1,12 @@
 <?php
 declare(strict_types=1);
 
-/* Change these only if your local MySQL setup differs. */
-const DB_HOST = '127.0.0.1';
-const DB_NAME = 'zero_limit_store';
-const DB_USER = 'root';
-const DB_PASS = '';
+/* InfinityFree MySQL connection. Do not commit real credentials to a public repository. */
+const DB_HOST = 'sql313.infinityfree.com';
+const DB_PORT = 3306;
+const DB_NAME = 'if0_42886021_ZL';
+const DB_USER = 'if0_42886021';
+const DB_PASS = '4ArS2u5Fx9KVGW';
 const APP_ROOT = __DIR__;
 
 if (session_status() !== PHP_SESSION_ACTIVE) {
@@ -19,9 +20,8 @@ function db(): PDO {
     if ($pdo instanceof PDO) return $pdo;
     $options = [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC, PDO::ATTR_EMULATE_PREPARES => false];
     try {
-        $server = new PDO('mysql:host=' . DB_HOST . ';charset=utf8mb4', DB_USER, DB_PASS, $options);
-        $server->exec('CREATE DATABASE IF NOT EXISTS `' . DB_NAME . '` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci');
-        $pdo = new PDO('mysql:host=' . DB_HOST . ';dbname=' . DB_NAME . ';charset=utf8mb4', DB_USER, DB_PASS, $options);
+        /* Shared hosting accounts receive a pre-created database; do not try to CREATE DATABASE here. */
+        $pdo = new PDO('mysql:host=' . DB_HOST . ';port=' . DB_PORT . ';dbname=' . DB_NAME . ';charset=utf8mb4', DB_USER, DB_PASS, $options);
         static $ready = false;
         if (!$ready) {
             $pdo->exec((string) file_get_contents(APP_ROOT . '/database.sql'));
@@ -30,7 +30,7 @@ function db(): PDO {
         }
     } catch (PDOException $e) {
         http_response_code(500);
-        exit('Database connection failed. Start MySQL in Laragon and check the credentials in config.php.');
+        exit('Database connection failed. Check the database settings in config.php.');
     }
     return $pdo;
 }
@@ -81,7 +81,7 @@ function cart_lines(): array {
     $cart = cart(); if (!$cart) return [];
     $ids = array_values(array_unique(array_map(fn($row) => (int)$row['product_id'], $cart)));
     $marks = implode(',', array_fill(0, count($ids), '?'));
-    $stmt = db()->prepare("SELECT p.*,c.name category FROM products p JOIN categories c ON c.id=p.category_id WHERE p.id IN ($marks) "); $stmt->execute($ids);
+    $stmt = db()->prepare("SELECT p.*,c.name category FROM products p JOIN categories c ON c.id=p.category_id WHERE p.id IN ($marks)"); $stmt->execute($ids);
     $products = []; foreach ($stmt->fetchAll() as $p) $products[$p['id']] = $p;
     $lines = []; foreach ($cart as $key => $row) if (isset($products[$row['product_id']])) { $p = $products[$row['product_id']]; $p['cart_key']=$key; $p['selected_size']=$row['size']; $p['selected_color']=$row['color']; $p['quantity']=(int)$row['quantity']; $p['unit_price']=product_price($p); $p['line_total']=$p['unit_price']*$p['quantity']; $lines[]=$p; }
     return $lines;
