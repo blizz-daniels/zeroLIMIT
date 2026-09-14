@@ -1,0 +1,3 @@
+@import url('admin.payment-ui-v1.css');
+
+.payment-history-link{display:flex;justify-content:flex-end;margin:0 0 16px}.payment-reference{display:block;max-width:190px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:500 9px 'DM Mono',monospace;color:#6d5b00}.admin-table-wrap td small{display:block;margin-top:4px;color:#77756f;font:500 9px/1.35 'DM Mono',monospace}@media(max-width:650px){.payment-history-link{justify-content:stretch}.payment-history-link .admin-button{width:100%;text-align:center}}
