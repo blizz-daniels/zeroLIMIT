@@ -2,22 +2,22 @@
 declare(strict_types=1);
 
 /* Monetary arithmetic stays in integer kobo until the database/display boundary. */
-function payment_decimal_to_kobo(string|int|float|null $value): int { $text=trim((string)$value); if(!preg_match('/^(\d+)(?:\.(\d{1,2}))?$/',$text,$m))return 0;return ((int)$m[1]*100)+(int)str_pad($m[2]??'',2,'0'); }
+function payment_decimal_to_kobo(string|int|float|null $value): int { $text=trim((string)$value);if(!preg_match('/^(\d+)(?:\.(\d{1,2}))?$/',$text,$m))return 0;return ((int)$m[1]*100)+(int)str_pad($m[2]??'',2,'0'); }
 function payment_kobo_to_naira(int $kobo): string { return number_format($kobo/100,2,'.',''); }
 function payment_money_kobo(int $kobo): string { return (function_exists('setting')?setting('currency','₦'):'₦').number_format($kobo/100,2); }
 function payment_percent_to_bps(string|int|float|null $value): int { $text=str_replace('%','',trim((string)$value));if(!preg_match('/^(\d+)(?:\.(\d{1,2}))?$/',$text,$m))return 0;return ((int)$m[1]*100)+(int)str_pad($m[2]??'',2,'0'); }
 function payment_ceil_div(int $n,int $d): int { return intdiv($n+$d-1,$d); }
 function payment_setting(string $key,string $fallback): string { return function_exists('setting')?setting($key,$fallback):$fallback; }
-function payment_fee_settings(): array { return ['service_bps'=>payment_percent_to_bps(payment_setting('service_charge_percent','10')),'paystack_bps'=>payment_percent_to_bps(payment_setting('paystack_fee_percent','1.5')),'fixed_kobo'=>payment_decimal_to_kobo(payment_setting('paystack_fee_fixed','100')),'waiver_threshold_kobo'=>payment_decimal_to_kobo(payment_setting('paystack_fee_waiver_threshold','2500')),'cap_kobo'=>payment_decimal_to_kobo(payment_setting('paystack_fee_cap','2000'))]; }
+function payment_fee_settings(): array { return ['service_bps'=>payment_percent_to_bps(payment_setting('service_charge_percent','5')),'paystack_bps'=>payment_percent_to_bps(payment_setting('paystack_fee_percent','1.5')),'fixed_kobo'=>payment_decimal_to_kobo(payment_setting('paystack_fee_fixed','100')),'waiver_threshold_kobo'=>payment_decimal_to_kobo(payment_setting('paystack_fee_waiver_threshold','2500')),'cap_kobo'=>payment_decimal_to_kobo(payment_setting('paystack_fee_cap','2000'))]; }
 function payment_paystack_fee_kobo(int $gross,array $fees): int { $percentage=payment_ceil_div($gross*$fees['paystack_bps'],10000);$fixed=$gross<$fees['waiver_threshold_kobo']?0:$fees['fixed_kobo'];$fee=$percentage+$fixed;return $fees['cap_kobo']>0?min($fee,$fees['cap_kobo']):$fee; }
 
-/* Finds the smallest amount G where G - PaystackFee(G) covers the settlement target. */
-function payment_quote_with_target(int $baseKobo,int $serviceKobo,int $deliveryKobo=0): array {
-    if($baseKobo<1)throw new InvalidArgumentException('The amount to receive must be greater than zero.');$fees=payment_fee_settings();if($fees['paystack_bps']<0||$fees['paystack_bps']>=10000)throw new RuntimeException('Payment fee settings are invalid.');
-    $target=$baseKobo+$serviceKobo+$deliveryKobo;$denominator=10000-$fees['paystack_bps'];$candidates=[$target,payment_ceil_div($target*10000,$denominator),payment_ceil_div(($target+$fees['fixed_kobo'])*10000,$denominator),$target+$fees['cap_kobo']];$gross=PHP_INT_MAX;
+/* Finds the smallest amount G where G - PaystackFee(G) covers the net amount plus service charge. */
+function payment_quote_with_target(int $baseKobo,int $serviceKobo): array {
+    if($baseKobo<1)throw new InvalidArgumentException('The amount to receive must be greater than zero.');$fees=payment_fee_settings();if($fees['service_bps']<0||$fees['paystack_bps']<0||$fees['paystack_bps']>=10000)throw new RuntimeException('Payment fee settings are invalid.');
+    $target=$baseKobo+$serviceKobo;$denominator=10000-$fees['paystack_bps'];$candidates=[$target,payment_ceil_div($target*10000,$denominator),payment_ceil_div(($target+$fees['fixed_kobo'])*10000,$denominator),$target+$fees['cap_kobo']];$gross=PHP_INT_MAX;
     foreach($candidates as $candidate){$candidate=max($target,$candidate);for($i=0;$i<25000;$i++,$candidate++){if($candidate-payment_paystack_fee_kobo($candidate,$fees)>=$target){$gross=min($gross,$candidate);break;}}}
     if($gross===PHP_INT_MAX)throw new RuntimeException('Could not calculate the customer payment total.');$paystack=payment_paystack_fee_kobo($gross,$fees);
-    return ['base_kobo'=>$baseKobo,'service_kobo'=>$serviceKobo,'delivery_kobo'=>$deliveryKobo,'paystack_kobo'=>$paystack,'gross_kobo'=>$gross,'expected_net_kobo'=>$gross-$paystack-$serviceKobo-$deliveryKobo,'charge_kobo'=>$gross-$baseKobo,'settings'=>$fees];
+    return ['base_kobo'=>$baseKobo,'service_kobo'=>$serviceKobo,'paystack_kobo'=>$paystack,'gross_kobo'=>$gross,'expected_net_kobo'=>$gross-$paystack-$serviceKobo,'charge_kobo'=>$gross-$baseKobo,'settings'=>$fees];
 }
 function payment_quote_kobo(int $baseKobo): array { $service=payment_ceil_div($baseKobo*payment_fee_settings()['service_bps'],10000);return payment_quote_with_target($baseKobo,$service); }
 function payment_quote_naira(string|int|float $base): array { return payment_quote_kobo(payment_decimal_to_kobo($base)); }
@@ -32,7 +32,11 @@ function payment_migrate(): void {
     $pdo->exec('CREATE TABLE IF NOT EXISTS payment_recipients (id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,name VARCHAR(150) NOT NULL,subaccount_code VARCHAR(100) NOT NULL UNIQUE,description VARCHAR(255) NULL,active TINYINT(1) NOT NULL DEFAULT 1,created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP) ENGINE=InnoDB');
     $pdo->exec('CREATE TABLE IF NOT EXISTS payment_transactions (id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,order_id INT UNSIGNED NOT NULL,recipient_id INT UNSIGNED NULL,reference_code VARCHAR(100) NOT NULL UNIQUE,provider VARCHAR(30) NOT NULL DEFAULT "paystack",base_amount DECIMAL(12,2) NOT NULL,service_charge DECIMAL(12,2) NOT NULL,expected_paystack_fee DECIMAL(12,2) NOT NULL,gross_amount DECIMAL(12,2) NOT NULL,expected_net_amount DECIMAL(12,2) NOT NULL,actual_paystack_fee DECIMAL(12,2) NULL,status VARCHAR(30) NOT NULL DEFAULT "initialized",raw_response JSON NULL,paid_at DATETIME NULL,created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,CONSTRAINT fk_payment_order FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE) ENGINE=InnoDB');
     payment_add_column($pdo,'products','recipient_id','INT UNSIGNED NULL');foreach(['base_subtotal'=>'DECIMAL(12,2) NOT NULL DEFAULT 0','service_charge'=>'DECIMAL(12,2) NOT NULL DEFAULT 0','paystack_fee'=>'DECIMAL(12,2) NOT NULL DEFAULT 0','payment_total'=>'DECIMAL(12,2) NOT NULL DEFAULT 0','recipient_id'=>'INT UNSIGNED NULL','payment_status'=>'VARCHAR(30) NOT NULL DEFAULT "unpaid"','paystack_reference'=>'VARCHAR(100) NULL'] as $column=>$definition)payment_add_column($pdo,'orders',$column,$definition);
-    foreach(['service_charge_percent'=>'10','paystack_fee_percent'=>'1.5','paystack_fee_fixed'=>'100','paystack_fee_waiver_threshold'=>'2500','paystack_fee_cap'=>'2000','paystack_public_key'=>'','paystack_secret_key'=>'','paystack_callback_url'=>''] as $key=>$value)payment_default_setting($pdo,$key,$value);$migrated=true;
+    foreach(['service_charge_percent'=>'5','paystack_fee_percent'=>'1.5','paystack_fee_fixed'=>'100','paystack_fee_waiver_threshold'=>'2500','paystack_fee_cap'=>'2000','paystack_public_key'=>'','paystack_secret_key'=>'','paystack_callback_url'=>''] as $key=>$value)payment_default_setting($pdo,$key,$value);
+    /* Replace the original default only; values deliberately changed to another percentage remain untouched. */
+    $pdo->prepare("UPDATE settings SET setting_value='5' WHERE setting_key='service_charge_percent' AND setting_value='10'")->execute();
+    $pdo->prepare("DELETE FROM settings WHERE setting_key IN ('delivery_fee','free_delivery_threshold')")->execute();
+    $migrated=true;
 }
 function payment_get_recipient(int $id): ?array { $stmt=db()->prepare('SELECT * FROM payment_recipients WHERE id=? AND active=1');$stmt->execute([$id]);return $stmt->fetch()?:null; }
 function payment_keys_ready(): bool { return str_starts_with(payment_setting('paystack_secret_key',''),'sk_')&&str_starts_with(payment_setting('paystack_public_key',''),'pk_'); }

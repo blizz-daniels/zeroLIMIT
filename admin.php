@@ -29,6 +29,8 @@ try {
     $html = str_replace('⚙ Settings</a>', '⚙ Settings</a><a href="admin.php?page=payments">₦ Payments</a>', $html);
     $html = str_replace('>Price<input', '>Recipient amount (net)<input', $html);
     $html = str_replace('>Discount price <small>(optional)</small><input', '>Sale recipient amount <small>(optional)</small><input', $html);
+    $html = preg_replace('~<label>Default delivery fee<input[^>]*></label><label>Free delivery threshold<input[^>]*></label>~s', '', $html) ?? $html;
+    $html = preg_replace('~<span>Delivery</span><b>[^<]*</b>~', '', $html) ?? $html;
     if (($route === 'product') && ($id = (int)($_GET['id'] ?? 0))) {
         $stmt = db()->prepare('SELECT p.*,r.name recipient_name,r.subaccount_code FROM products p LEFT JOIN payment_recipients r ON r.id=p.recipient_id WHERE p.id=?');
         $stmt->execute([$id]);
@@ -37,11 +39,19 @@ try {
             $base = $product['discount_price'] !== null ? (string)$product['discount_price'] : (string)$product['price'];
             $quote = payment_quote_naira($base);
             $recipient = $product['recipient_name'] ? h($product['recipient_name'] . ' (' . $product['subaccount_code'] . ')') : 'Not assigned — configure in Payments';
-            $panel = '<section class="panel payment-product-panel"><p class="eyebrow">payment pricing</p><h2>Gross-up breakdown</h2><div class="payment-admin-breakdown"><span>Base / amount to receive</span><b>' . payment_money_kobo($quote['base_kobo']) . '</b><span>10% service charge</span><b>' . payment_money_kobo($quote['service_kobo']) . '</b><span>Estimated Paystack fee</span><b>' . payment_money_kobo($quote['paystack_kobo']) . '</b><span>Final customer price</span><b>' . payment_money_kobo($quote['gross_kobo']) . '</b><span>Recipient / subaccount</span><b>' . $recipient . '</b><span>Expected recipient net</span><b>' . payment_money_kobo($quote['expected_net_kobo']) . '</b></div><a class="admin-button" href="admin.php?page=payments">Manage payment recipients &rarr;</a></section>';
+            $serviceLabel = rtrim(rtrim(payment_kobo_to_naira($quote['settings']['service_bps']), '0'), '.') . '% service charge';
+            $panel = '<section class="panel payment-product-panel"><p class="eyebrow">payment pricing</p><h2>Gross-up breakdown</h2><div class="payment-admin-breakdown"><span>Base / amount to receive</span><b>' . payment_money_kobo($quote['base_kobo']) . '</b><span>' . h($serviceLabel) . '</span><b>' . payment_money_kobo($quote['service_kobo']) . '</b><span>Estimated Paystack fee</span><b>' . payment_money_kobo($quote['paystack_kobo']) . '</b><span>Final customer price</span><b>' . payment_money_kobo($quote['gross_kobo']) . '</b><span>Recipient / subaccount</span><b>' . $recipient . '</b><span>Expected recipient net</span><b>' . payment_money_kobo($quote['expected_net_kobo']) . '</b></div><a class="admin-button" href="admin.php?page=payments">Manage payment recipients &rarr;</a></section>';
             $html = str_replace('</main></body>', $panel . '</main></body>', $html);
         }
     }
 } catch (Throwable $ignored) {
     /* Existing admin pages stay available if payment migration is temporarily unavailable. */
 }
+
+/* The initial administrator credentials must never be rendered into the login form. */
+$html = preg_replace('~(<input\b(?=[^>]*\bname="email")[^>]*?)\svalue="[^"]*"~i', '$1', $html) ?? $html;
+$html = preg_replace('~(<input\b(?=[^>]*\bname="password")[^>]*?)\svalue="[^"]*"~i', '$1', $html) ?? $html;
+$html = str_replace('autocomplete="username"', 'autocomplete="off"', $html);
+$html = str_replace('autocomplete="current-password"', 'autocomplete="off"', $html);
+$html = preg_replace('~<p class="login-note">.*?</p>~s', '<p class="login-note">Enter your administrator credentials to continue.</p>', $html, 1) ?? $html;
 echo $html;

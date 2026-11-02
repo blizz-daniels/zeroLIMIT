@@ -20,11 +20,10 @@ function db(): PDO {
     if ($pdo instanceof PDO) return $pdo;
     $options = [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC, PDO::ATTR_EMULATE_PREPARES => false];
     try {
-        /* Shared hosting accounts receive a pre-created database; do not try to CREATE DATABASE here. */
         $pdo = new PDO('mysql:host=' . DB_HOST . ';port=' . DB_PORT . ';dbname=' . DB_NAME . ';charset=utf8mb4', DB_USER, DB_PASS, $options);
         static $ready = false;
         if (!$ready) {
-            $pdo->exec((string) file_get_contents(APP_ROOT . '/database.sql'));
+            $pdo->exec((string)file_get_contents(APP_ROOT . '/database.sql'));
             seed_store($pdo);
             $ready = true;
         }
@@ -36,10 +35,10 @@ function db(): PDO {
 }
 
 function seed_store(PDO $pdo): void {
-    if ((int) $pdo->query('SELECT COUNT(*) FROM admins')->fetchColumn() === 0) {
+    if ((int)$pdo->query('SELECT COUNT(*) FROM admins')->fetchColumn() === 0) {
         $pdo->prepare('INSERT INTO admins (name,email,password) VALUES (?,?,?)')->execute(['Zero Limit Admin', 'admin@zerolimit.test', password_hash('Admin@123', PASSWORD_DEFAULT)]);
     }
-    if ((int) $pdo->query('SELECT COUNT(*) FROM categories')->fetchColumn() === 0) {
+    if ((int)$pdo->query('SELECT COUNT(*) FROM categories')->fetchColumn() === 0) {
         $items = [
             ['Cosmetics', 'Colour with no ceiling'], ['Clothing', 'Built for the daily run'], ['Skincare', 'Reset. Recharge. Repeat.'],
             ['Hair & Beauty', 'The finishing move'], ['Accessories', 'Details that hit different'], ['Essentials', 'Everyday gear, elevated'], ['Unisex', 'For every version of you']
@@ -47,7 +46,7 @@ function seed_store(PDO $pdo): void {
         $statement = $pdo->prepare('INSERT INTO categories (name,description) VALUES (?,?)');
         foreach ($items as $item) $statement->execute($item);
     }
-    if ((int) $pdo->query('SELECT COUNT(*) FROM products')->fetchColumn() === 0) {
+    if ((int)$pdo->query('SELECT COUNT(*) FROM products')->fetchColumn() === 0) {
         $categories = array_flip($pdo->query('SELECT id,name FROM categories')->fetchAll(PDO::FETCH_KEY_PAIR));
         $products = [
             ['Zero Logo Beanie', 'A heavyweight black knit beanie finished with a bold Zero Limit mark.', 'Accessories', 15000.00, 13000.00, 24, 'Unisex', '', 'Black', 'https://images.unsplash.com/photo-1576871337622-98d48d1cf531?auto=format&fit=crop&w=900&q=85', 1, 1],
@@ -59,13 +58,11 @@ function seed_store(PDO $pdo): void {
         ];
         $sql = 'INSERT INTO products (category_id,name,description,price,discount_price,stock,gender,sizes,colors,image,is_featured,is_new,status) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,"active")';
         $statement = $pdo->prepare($sql);
-        foreach ($products as $p) {
-            $statement->execute([$categories[$p[2]], $p[0], $p[1], $p[3], $p[4], $p[5], $p[6], $p[7], $p[8], $p[9], $p[10], $p[11]]);
-        }
+        foreach ($products as $p) $statement->execute([$categories[$p[2]], $p[0], $p[1], $p[3], $p[4], $p[5], $p[6], $p[7], $p[8], $p[9], $p[10], $p[11]]);
     }
 }
 
-function h(?string $value): string { return htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8'); }
+function h(?string $value): string { return htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8'); }
 function money(float $amount): string { return site_settings()['currency'] . number_format($amount, 2); }
 function csrf_token(): string { return $_SESSION['csrf'] ??= bin2hex(random_bytes(32)); }
 function csrf_input(): string { return '<input type="hidden" name="csrf" value="' . h(csrf_token()) . '">'; }
@@ -90,8 +87,8 @@ function cart_total(): float { return array_sum(array_column(cart_lines(), 'line
 function order_status_class(string $status): string { return strtolower(str_replace(' ', '-', $status)); }
 function admin_required(): void { if (empty($_SESSION['admin_id'])) redirect('admin.php'); }
 function render_header(string $title = ''): void { $notice = flash('notice'); $store = setting('store_name', 'Zero Limit'); ?>
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#f4c518"><title><?=h($title ? "$title | $store" : $store)?></title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500&display=swap" rel="stylesheet"><link rel="stylesheet" href="assets/style.css"></head><body><div class="announcement">Free delivery on orders over &#8358;15,000 <span>&middot;</span> Zero limits, always</div><header class="site-header"><a class="wordmark" href="index.php">ZERO<span>LIMIT</span><small>unlimited supply</small></a><button class="menu-toggle" aria-label="Open menu">&#9776;</button><nav class="main-nav"><a href="index.php">Home</a><a href="index.php?page=shop">Shop</a><a href="index.php?page=shop#categories">Categories</a><a href="index.php?page=new">New Arrivals</a><a href="index.php?page=about">About</a><a href="index.php?page=contact">Contact</a></nav><a class="cart-link" href="index.php?page=cart" aria-label="Shopping cart">Bag <b><?=cart_count()?></b></a></header><?php if ($notice): ?><div class="toast"><?=h($notice)?></div><?php endif; ?><main>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#f4c518"><title><?=h($title ? "$title | $store" : $store)?></title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500&display=swap" rel="stylesheet"><link rel="stylesheet" href="assets/style.css"></head><body><header class="site-header"><a class="wordmark" href="index.php">ZERO<span>LIMIT</span><small>unlimited supply</small></a><button class="menu-toggle" aria-label="Open menu">&#9776;</button><nav class="main-nav"><a href="index.php">Home</a><a href="index.php?page=shop">Shop</a><a href="index.php?page=shop#categories">Categories</a><a href="index.php?page=new">New Arrivals</a><a href="index.php?page=about">About</a><a href="index.php?page=contact">Contact</a></nav><a class="cart-link" href="index.php?page=cart" aria-label="Shopping cart">Bag <b><?=cart_count()?></b></a></header><?php if ($notice): ?><div class="toast"><?=h($notice)?></div><?php endif; ?><main>
 <?php }
 function render_footer(): void { ?>
-</main><footer class="site-footer"><section><a class="wordmark" href="index.php">ZERO<span>LIMIT</span><small>unlimited supply</small></a><p>Gear, beauty, and everyday essentials for wherever you are headed next.</p><div class="socials">instagram &middot; tiktok &middot; pinterest</div></section><section><h4>Shop</h4><a href="index.php?page=shop&category=Cosmetics">Cosmetics</a><a href="index.php?page=shop&category=Clothing">Clothing</a><a href="index.php?page=shop&category=Skincare">Skincare</a><a href="index.php?page=new">New arrivals</a></section><section><h4>Customer care</h4><a href="index.php?page=contact">Contact us</a><a href="index.php?page=about">Delivery information</a><a href="index.php?page=about">Returns & exchanges</a><a href="index.php?page=about">Privacy policy</a></section><section><h4>Stay in the loop</h4><p>New drops, private offers, and first access.</p><form class="newsletter" onsubmit="return false"><input type="email" placeholder="Your email address"><button aria-label="Subscribe">&rarr;</button></form></section><small class="copyright">&copy; <?=date('Y')?> Zero Limit. No ceilings. No compromises. <a href="admin.php">Admin</a></small></footer><script src="assets/app.js"></script></body></html>
+</main><footer class="site-footer"><section><a class="wordmark" href="index.php">ZERO<span>LIMIT</span><small>unlimited supply</small></a><p>Gear, beauty, and everyday essentials for wherever you are headed next.</p><div class="socials">instagram &middot; tiktok &middot; pinterest</div></section><section><h4>Shop</h4><a href="index.php?page=shop&category=Cosmetics">Cosmetics</a><a href="index.php?page=shop&category=Clothing">Clothing</a><a href="index.php?page=shop&category=Skincare">Skincare</a><a href="index.php?page=new">New arrivals</a></section><section><h4>Customer care</h4><a href="index.php?page=contact">Contact us</a><a href="index.php?page=about">Order information</a><a href="index.php?page=about">Returns &amp; exchanges</a><a href="index.php?page=about">Privacy policy</a></section><section><h4>Stay in the loop</h4><p>New drops, private offers, and first access.</p><form class="newsletter" onsubmit="return false"><input type="email" placeholder="Your email address"><button aria-label="Subscribe">&rarr;</button></form></section><small class="copyright">&copy; <?=date('Y')?> Zero Limit. No ceilings. No compromises. <a href="admin.php">Admin</a></small></footer><script src="assets/app.js"></script></body></html>
 <?php }

@@ -11,17 +11,11 @@ try {
     payment_migrate();
     $lines = cart_lines();
     if (!$lines) throw new RuntimeException('Cart is empty.');
-
     $base = payment_cart_base_kobo($lines);
-    $delivery = $base >= payment_decimal_to_kobo(setting('free_delivery_threshold', '15000'))
-        ? 0
-        : payment_decimal_to_kobo(setting('delivery_fee', '0'));
     $service = payment_ceil_div($base * payment_fee_settings()['service_bps'], 10000);
-    $quote = payment_quote_with_target($base, $service, $delivery);
-
+    $quote = payment_quote_with_target($base, $service);
     echo json_encode(['status' => true, 'quote' => [
         'base' => payment_money_kobo($quote['base_kobo']),
-        'delivery' => $quote['delivery_kobo'] ? payment_money_kobo($quote['delivery_kobo']) : 'Free',
         'service' => payment_money_kobo($quote['service_kobo']),
         'paystack' => payment_money_kobo($quote['paystack_kobo']),
         'total' => payment_money_kobo($quote['gross_kobo']),
