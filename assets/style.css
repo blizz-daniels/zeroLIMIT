@@ -1,4 +1,1 @@
-@import url('style.payment-base.css');
-
-/* Payment checkout */
-.payment-alert{margin:0 0 22px;padding:14px 16px;border-left:4px solid #f4c518;background:#1a1a1c;color:#f7f6f0;font:500 11px/1.55 'DM Mono',monospace;letter-spacing:.02em}.payment-note{margin-top:14px;color:#777671;font:500 10px/1.55 'DM Mono',monospace}.checkout-summary .payment-line{display:flex;justify-content:space-between;gap:16px;padding:11px 0;border-top:1px solid #d6d4cb;font:500 11px 'DM Mono',monospace}.checkout-summary .payment-line.total{margin-top:4px;border-top:3px solid #0b0b0d;color:#0b0b0d;font:600 14px 'Space Grotesk',sans-serif}.checkout-summary .payment-line.total b{color:#0b0b0d}.checkout-summary .payment-line.service{color:#6c5a00}
+@import url('style.joam.css');
