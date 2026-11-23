@@ -1,12 +1,13 @@
 <?php
 declare(strict_types=1);
 
-/* Local Laragon MySQL connection. Keep production credentials outside version control. */
-const DB_HOST = '127.0.0.1';
+/* InfinityFree MySQL connection for joamstores.freedev.app. */
+const DB_HOST = 'sql108.infinityfree.com';
 const DB_PORT = 3306;
-const DB_NAME = 'joam_store';
-const DB_USER = 'root';
-const DB_PASS =
+const DB_NAME = 'if0_43455846_joam';
+const DB_USER = 'if0_43455846';
+/* The supplied password was redacted; replace this placeholder with the actual value. */
+const DB_PASS = 'YOUR_INFINITYFREE_MYSQL_PASSWORD';
 const APP_ROOT = __DIR__;
 
 if (session_status() !== PHP_SESSION_ACTIVE) {
