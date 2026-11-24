@@ -40,7 +40,7 @@ function seed_store(PDO $pdo): void {
         $pdo->prepare('INSERT INTO admins (name,email,password) VALUES (?,?,?)')->execute(['JOAM Admin', 'admin@joamcollection.test', password_hash('Admin@123', PASSWORD_DEFAULT)]);
     }
     $settings = [
-        'store_name' => 'JOAM', 'store_description' => 'Modern essentials, made to be lived in.',
+        'store_name' => 'JOAM', 'store_description' => 'Heritage forms, modern confidence.',
         'contact_phone' => '+234 800 000 0000', 'contact_email' => 'hello@joamcollection.com',
         'store_address' => 'Lagos, Nigeria', 'currency' => '&#8358;', 'delivery_fee' => '2500.00',
         'free_delivery_threshold' => '50000.00', 'instagram' => '@joamcollection'
@@ -49,57 +49,45 @@ function seed_store(PDO $pdo): void {
     foreach ($settings as $key => $value) $saveSetting->execute([$key, $value]);
 
     $catalogVersion = (string)($pdo->query("SELECT setting_value FROM settings WHERE setting_key='catalog_version'")->fetchColumn() ?: '');
-    if ($catalogVersion === 'joam-2026-11-v1') return;
+    if ($catalogVersion === 'joam-2026-11-v2') return;
 
     $pdo->beginTransaction();
     try {
-        /* Preserve historical products and orders, while removing them from the new JOAM storefront. */
-        $pdo->exec("UPDATE products SET status='inactive' WHERE status='active'");
-        $pdo->exec('UPDATE categories SET active=0');
         $items = [
-            ['Long Sleeve', 'Crisp tailoring and quietly confident patterns.'],
-            ['Short Sleeve', 'Easy cuts for warm days and late plans.'],
-            ['Signature Prints', 'Distinctive patterns, thoughtfully balanced.']
+            ['Native Sets', 'Distinctive two-piece looks informed by heritage tailoring.'],
+            ['Heritage Tunics', 'Embroidered tunics with considered finishing.'],
+            ['Tracksuits', 'Easy coordinated layers for everyday movement.'],
+            ['Hoodies & Lounge', 'Relaxed essentials designed for comfort and repeat wear.'],
+            ['Polos', 'Sharp casual staples with a clean finish.'],
+            ['Matching Sets', 'Coordinated looks made to be shared.']
         ];
         $saveCategory = $pdo->prepare('INSERT INTO categories (name,description,active) VALUES (?,?,1) ON DUPLICATE KEY UPDATE description=VALUES(description), active=1');
         foreach ($items as $item) $saveCategory->execute($item);
         $categories = array_flip($pdo->query('SELECT id,name FROM categories')->fetchAll(PDO::FETCH_KEY_PAIR));
         $products = [
-            ['Windowpane Olive Shirt', 'An olive windowpane shirt with an easy tailored line.', 'Long Sleeve', 35500, null, 'Olive windowpane', 'WhatsApp Image 2026-11-16 at 1.06.05 PM (1).jpeg', 1, 1],
-            ['Play Water Graphic Shirt', 'A relaxed short-sleeve shirt with an expressive all-over type print.', 'Signature Prints', 32500, null, 'Stone graphic', 'WhatsApp Image 2026-11-16 at 1.06.05 PM.jpeg', 1, 1],
-            ['Cocoa Micro-Check Shirt', 'A fine cocoa check designed for a polished everyday rotation.', 'Long Sleeve', 37500, null, 'Cocoa micro-check', 'WhatsApp Image 2026-11-16 at 1.06.06 PM (1).jpeg', 1, 1],
-            ['Monochrome Checker Shirt', 'Graphic black-and-white checks with a clean, regular fit.', 'Signature Prints', 37500, null, 'Black and ivory', 'WhatsApp Image 2026-11-16 at 1.06.06 PM (2).jpeg', 1, 1],
-            ['Teal Camp-Collar Shirt', 'A crisp teal short-sleeve layer with a relaxed camp collar.', 'Short Sleeve', 31500, null, 'Teal', 'WhatsApp Image 2026-11-16 at 1.06.06 PM.jpeg', 0, 1],
-            ['Indigo Everyday Check', 'A deep indigo plaid that brings texture to a simple look.', 'Long Sleeve', 36500, 33500, 'Indigo plaid', 'WhatsApp Image 2026-11-16 at 1.06.07 PM (1).jpeg', 0, 1],
-            ['Rose Checkmate Shirt', 'Pink and charcoal checks in an easy, short-sleeve cut.', 'Short Sleeve', 32500, null, 'Rose check', 'WhatsApp Image 2026-11-16 at 1.06.07 PM.jpeg', 0, 1],
-            ['Mustard Summer Plaid', 'Sun-warmed plaid with a relaxed silhouette for the season.', 'Short Sleeve', 33500, null, 'Mustard plaid', 'WhatsApp Image 2026-11-16 at 1.06.08 PM (1).jpeg', 0, 1],
-            ['Red Geometry Camp Shirt', 'A statement camp shirt in red, black, and ivory geometry.', 'Signature Prints', 33500, null, 'Red geometric', 'WhatsApp Image 2026-11-16 at 1.06.08 PM (2).jpeg', 0, 1],
-            ['White Map Print Shirt', 'A clean white short sleeve with a subtle illustrated print.', 'Signature Prints', 34500, null, 'White map print', 'WhatsApp Image 2026-11-16 at 1.06.08 PM.jpeg', 0, 1],
-            ['Slate Type Print Shirt', 'A soft slate graphic shirt made for artful off-duty dressing.', 'Signature Prints', 32500, null, 'Slate type print', 'WhatsApp Image 2026-11-16 at 1.06.09 PM (1).jpeg', 0, 1],
-            ['Dove Geo Short Sleeve', 'A refined dove-grey pattern with a clean short-sleeve profile.', 'Signature Prints', 34500, null, 'Dove geometric', 'WhatsApp Image 2026-11-16 at 1.06.09 PM (2).jpeg', 0, 1],
-            ['Green Abstract Camp Shirt', 'A green abstract print for a confident summer layer.', 'Signature Prints', 35500, null, 'Green abstract', 'WhatsApp Image 2026-11-16 at 1.06.09 PM.jpeg', 0, 1],
-            ['Mono Motion Long Sleeve', 'A black-and-ivory motion print with a sharp, modern feel.', 'Signature Prints', 38500, null, 'Monochrome print', 'WhatsApp Image 2026-11-16 at 1.06.18 PM (1).jpeg', 0, 1],
-            ['Sky Blue Oxford', 'A simple sky blue button-down that always earns its place.', 'Long Sleeve', 35500, null, 'Sky blue', 'WhatsApp Image 2026-11-16 at 1.06.18 PM (2).jpeg', 0, 1],
-            ['Navy Fine Stripe Shirt', 'Fine navy stripes in an easy button-down shirt.', 'Long Sleeve', 36500, null, 'Navy stripe', 'WhatsApp Image 2026-11-16 at 1.06.18 PM.jpeg', 0, 1],
-            ['Sage Textured Shirt', 'A lightly textured sage shirt in a soft, versatile tone.', 'Long Sleeve', 37500, null, 'Sage', 'WhatsApp Image 2026-11-16 at 1.06.19 PM (1).jpeg', 0, 1],
-            ['Heritage Stripe Shirt', 'A blue striped long sleeve with classic proportions.', 'Long Sleeve', 37500, null, 'Blue stripe', 'WhatsApp Image 2026-11-16 at 1.06.19 PM (2).jpeg', 0, 1],
-            ['Blue Palm Print Shirt', 'A tailored blue palm print with a bright, composed finish.', 'Signature Prints', 38500, null, 'Blue palm print', 'WhatsApp Image 2026-11-16 at 1.06.19 PM (3).jpeg', 0, 1],
-            ['Teal Pinstripe Shirt', 'Fine teal pinstripes for a modern, elevated everyday shirt.', 'Long Sleeve', 38500, null, 'Teal pinstripe', 'WhatsApp Image 2026-11-16 at 1.06.19 PM.jpeg', 0, 1],
-            ['Ash Micro-Grid Shirt', 'A quiet ash micro-grid shirt, easy to dress up or down.', 'Long Sleeve', 36500, null, 'Ash micro-grid', 'WhatsApp Image 2026-11-16 at 1.06.20 PM (1).jpeg', 0, 1],
-            ['Contour Print Camp Shirt', 'A relaxed camp shirt with a playful contour-line print.', 'Signature Prints', 35500, null, 'Contour print', 'WhatsApp Image 2026-11-16 at 1.06.20 PM (2).jpeg', 0, 1],
-            ['Maroon Plaid Essential', 'A maroon plaid short sleeve that grounds a weekend look.', 'Short Sleeve', 34500, null, 'Maroon plaid', 'WhatsApp Image 2026-11-16 at 1.06.20 PM.jpeg', 0, 1],
-            ['Blue Fine-Stripe Oxford', 'Fine blue stripes, a sharp collar, and a timeless finish.', 'Long Sleeve', 36500, null, 'Blue fine stripe', 'WhatsApp Image 2026-11-16 at 1.06.21 PM (1).jpeg', 0, 1],
-            ['Brown Geometric Shirt', 'A rich brown geometric short sleeve with subtle character.', 'Signature Prints', 35500, null, 'Brown geometric', 'WhatsApp Image 2026-11-16 at 1.06.21 PM (2).jpeg', 0, 1],
-            ['Ivory Fine Stripe Shirt', 'A refined ivory stripe shirt for considered occasions.', 'Long Sleeve', 39500, null, 'Ivory stripe', 'WhatsApp Image 2026-11-16 at 1.06.21 PM (3).jpeg', 0, 1],
-            ['Navy Vertical Stripe Shirt', 'Clean navy vertical stripes with a modern regular fit.', 'Long Sleeve', 37500, null, 'Navy vertical stripe', 'WhatsApp Image 2026-11-16 at 1.06.21 PM.jpeg', 0, 1]
+            ['Royal Blue Asymmetric Set', 'A two-tone native set with a sculptural printed panel and matching trousers.', 'Native Sets', 52500, null, 'Royal blue and ink', 'royal-blue-native-set.jpeg', 'M,L,XL,2XL,3XL,4XL', 'Men', 1, 1],
+            ['Olive Ceremony Set', 'A refined olive native set with tonal woven stripes and cap.', 'Native Sets', 49500, null, 'Olive green', 'olive-native-set.jpeg', 'M,L,XL,2XL,3XL,4XL', 'Men', 1, 1],
+            ['Crimson Noir Set', 'A black native set enlivened by a rich crimson central panel.', 'Native Sets', 55000, null, 'Crimson and black', 'crimson-noir-native-set.jpeg', 'M,L,XL,2XL,3XL,4XL', 'Men', 1, 1],
+            ['Amber Indigo Statement Set', 'A striking amber print and indigo panel set with coordinated trousers.', 'Native Sets', 56000, null, 'Amber and indigo', 'amber-indigo-native-set.jpeg', 'M,L,XL,2XL,3XL,4XL', 'Men', 1, 1],
+            ['Ivory Woven Tunic', 'A short-sleeve ivory tunic detailed with a geometric chest embroidery.', 'Heritage Tunics', 32000, null, 'Ivory and charcoal', 'ivory-heritage-tunic.jpeg', 'S,M,L,XL,2XL,3XL,4XL', 'Men', 0, 1],
+            ['Midnight Gold Tunic', 'A deep midnight tunic with a gold woven placket and pocket detail.', 'Heritage Tunics', 34000, null, 'Midnight and gold', 'midnight-heritage-tunic.jpeg', 'S,M,L,XL,2XL,3XL,4XL', 'Men', 0, 1],
+            ['Sand Stitch Tunic', 'A warm sand tunic finished with dark geometric embroidery.', 'Heritage Tunics', 33000, null, 'Sand and espresso', 'sand-heritage-tunic.jpeg', 'S,M,L,XL,2XL,3XL,4XL', 'Men', 0, 1],
+            ['Coral Navy Track Set', 'A colour-block zip jacket and jogger set for an energetic everyday uniform.', 'Tracksuits', 44500, null, 'Coral, navy and white', 'coral-navy-tracksuit.jpeg', 'M,L,XL,2XL,3XL,4XL', 'Unisex', 0, 1],
+            ['Navy Grey Training Set', 'A navy hoodie set with light grey contrast panels.', 'Tracksuits', 43500, null, 'Navy and grey', 'navy-grey-tracksuit.jpeg', 'M,L,XL,2XL,3XL,4XL', 'Unisex', 0, 1],
+            ['Ice Stripe Zip Set', 'A light zip-neck tracksuit with graphic black and crimson stripes.', 'Tracksuits', 46000, null, 'Ice, black and crimson', 'ice-stripe-tracksuit.jpeg', 'M,L,XL,2XL,3XL,4XL', 'Unisex', 0, 1],
+            ['Emerald Varsity Set', 'A rich green hooded set with bright varsity-inspired trim.', 'Tracksuits', 46500, null, 'Emerald and white', 'emerald-varsity-set.jpeg', 'M,L,XL,2XL,3XL,4XL', 'Men', 0, 1],
+            ['White Trim Zip Polo', 'A crisp white polo with dark trim, a stand collar, and a neat zip placket.', 'Polos', 24500, null, 'White and black', 'white-zip-polo.jpeg', 'S,M,L,XL,2XL,3XL,4XL,5XL,6XL,7XL,8XL', 'Men', 0, 1],
+            ['King & Queen Lounge Set', 'A coordinated sky-blue hoodie and jogger set for two.', 'Matching Sets', 69000, null, 'Sky blue', 'king-queen-lounge-set.jpeg', 'M,L,XL,2XL,3XL,4XL', 'Unisex', 0, 1],
+            ['Navy Chevron Hoodie', 'A navy and white chevron hoodie with a clean athletic profile.', 'Hoodies & Lounge', 28500, null, 'Navy and white', 'navy-chevron-hoodie.jpeg', 'M,L,XL,2XL,3XL,4XL', 'Unisex', 0, 1],
+            ['Slate Family Lounge Set', 'Matching slate hoodies and joggers for a coordinated family moment.', 'Matching Sets', 74500, null, 'Slate blue', 'slate-family-lounge-set.jpeg', 'M,L,XL,2XL,3XL,4XL', 'Unisex', 0, 1]
         ];
         $sql = 'INSERT INTO products (category_id,name,description,price,discount_price,stock,gender,sizes,colors,image,is_featured,is_new,status) VALUES (?,?,?,?,?,?,?,?,?,?,?, ?,"active")';
         $statement = $pdo->prepare($sql);
         foreach ($products as $index => $product) {
-            [$name, $description, $category, $price, $salePrice, $colour, $image, $featured, $isNew] = $product;
-            $statement->execute([$categories[$category], $name, $description, $price, $salePrice, 12 + ($index % 9), 'Men', 'S,M,L,XL,XXL', $colour, 'assets/' . $image, $featured, $isNew]);
+            [$name, $description, $category, $price, $salePrice, $colour, $image, $sizes, $gender, $featured, $isNew] = $product;
+            $statement->execute([$categories[$category], $name, $description, $price, $salePrice, 12 + ($index % 9), $gender, $sizes, $colour, 'assets/' . $image, $featured, $isNew]);
         }
-        $saveSetting->execute(['catalog_version', 'joam-2026-11-v1']);
+        $saveSetting->execute(['catalog_version', 'joam-2026-11-v2']);
         $pdo->commit();
     } catch (Throwable $e) {
         if ($pdo->inTransaction()) $pdo->rollBack();
@@ -132,8 +120,8 @@ function cart_total(): float { return array_sum(array_column(cart_lines(), 'line
 function order_status_class(string $status): string { return strtolower(str_replace(' ', '-', $status)); }
 function admin_required(): void { if (empty($_SESSION['admin_id'])) redirect('admin.php'); }
 function render_header(string $title = ''): void { $notice = flash('notice'); $store = setting('store_name', 'JOAM'); ?>
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#596b50"><title><?=h($title ? "$title | $store" : $store)?></title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500;1,600&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="assets/style.css"></head><body><div class="announcement">Complimentary delivery on orders over &#8358;50,000 <span>&middot;</span> The JOAM edit</div><header class="site-header"><a class="wordmark" href="index.php">JOAM<small>collection</small></a><button class="menu-toggle" aria-label="Open menu">&#9776;</button><nav class="main-nav"><a href="index.php">Home</a><a href="index.php?page=shop">Collection</a><a href="index.php?page=shop#categories">Shirts</a><a href="index.php?page=new">New arrivals</a><a href="index.php?page=about">Story</a><a href="index.php?page=contact">Contact</a></nav><a class="cart-link" href="index.php?page=cart" aria-label="Shopping cart">Bag <b><?=cart_count()?></b></a></header><?php if ($notice): ?><div class="toast"><?=h($notice)?></div><?php endif; ?><main>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#12101c"><title><?=h($title ? "$title | $store" : $store)?></title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500;1,600&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="assets/style.css"></head><body><div class="announcement">A signature for every entrance <span>&middot;</span> The JOAM royal edit</div><header class="site-header"><a class="wordmark" href="index.php"><img class="brand-crest" src="assets/joam-logo.jpeg" alt=""><span>JOAM<small>collection</small></span></a><button class="menu-toggle" aria-label="Open menu">&#9776;</button><nav class="main-nav"><a href="index.php">Home</a><a href="index.php?page=shop">Collection</a><a href="index.php?page=shop&category=Native+Sets">Native sets</a><a href="index.php?page=shop&category=Tracksuits">Tracksuits</a><a href="index.php?page=size-guide">Size guide</a><a href="index.php?page=about">Story</a></nav><a class="cart-link" href="index.php?page=cart" aria-label="Shopping cart">Bag <b><?=cart_count()?></b></a></header><?php if ($notice): ?><div class="toast"><?=h($notice)?></div><?php endif; ?><main>
 <?php }
 function render_footer(): void { ?>
-</main><footer class="site-footer"><section><a class="wordmark" href="index.php">JOAM<small>collection</small></a><p>Modern shirting and distinct prints for the life you are already living.</p><div class="socials">Instagram &middot; TikTok &middot; Pinterest</div></section><section><h4>Shop</h4><a href="index.php?page=shop&category=Long+Sleeve">Long sleeve</a><a href="index.php?page=shop&category=Short+Sleeve">Short sleeve</a><a href="index.php?page=shop&category=Signature+Prints">Signature prints</a><a href="index.php?page=new">New arrivals</a></section><section><h4>Customer care</h4><a href="index.php?page=contact">Contact us</a><a href="index.php?page=about">Delivery information</a><a href="index.php?page=about">Returns &amp; exchanges</a><a href="index.php?page=about">Privacy policy</a></section><section><h4>Stay in the loop</h4><p>New edits, private offers, and first access.</p><form class="newsletter" onsubmit="return false"><input type="email" placeholder="Your email address"><button aria-label="Subscribe">&rarr;</button></form></section><small class="copyright">&copy; <?=date('Y')?> JOAM Collection. Modern essentials, made to be lived in. <a href="admin.php">Admin</a></small></footer><script src="assets/app.js"></script></body></html>
+</main><footer class="site-footer"><section><a class="wordmark" href="index.php"><img class="brand-crest" src="assets/joam-logo.jpeg" alt=""><span>JOAM<small>collection</small></span></a><p>Heritage forms, modern confidence. Made for every entrance.</p><div class="socials">Instagram &middot; TikTok &middot; Pinterest</div></section><section><h4>Shop</h4><a href="index.php?page=shop&category=Native+Sets">Native sets</a><a href="index.php?page=shop&category=Heritage+Tunics">Heritage tunics</a><a href="index.php?page=shop&category=Tracksuits">Tracksuits</a><a href="index.php?page=shop&category=Matching+Sets">Matching sets</a></section><section><h4>Customer care</h4><a href="index.php?page=size-guide">Size guide</a><a href="index.php?page=contact">Contact us</a><a href="index.php?page=about">Delivery information</a><a href="index.php?page=about">Returns &amp; exchanges</a></section><section><h4>Stay in the loop</h4><p>New edits, private offers, and first access.</p><form class="newsletter" onsubmit="return false"><input type="email" placeholder="Your email address"><button aria-label="Subscribe">&rarr;</button></form></section><small class="copyright">&copy; <?=date('Y')?> JOAM Collection. Heritage forms, modern confidence. <a href="admin.php">Admin</a></small></footer><script src="assets/app.js"></script></body></html>
 <?php }
